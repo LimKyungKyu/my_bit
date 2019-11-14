@@ -1,0 +1,63 @@
+1. 소켓관련 헤더, 전역변수 선언
+
+#include <WinSock2.h>
+#define PORT_NUM    4000
+SOCKET server_socket, client_socket;
+static int total_size;
+unsigned char* recv_data;
+
+2. demo() 함수 내 소켓 선언 및 정의
+
+    // socket define
+    WSADATA wsa_data;
+    SOCKADDR_IN server_addr, client_addr;
+    int client_addr_size;
+
+    int ret;
+    char send_buff[3];
+    char to_buff[3];
+    
+    // winsock 초기화, 버전 2.2
+    if (0 < WSAStartup(MAKEWORD(2, 2), &wsa_data)) {
+        perror("WSAStartup() error\n");
+        return 0;
+    }
+
+    // server socket 생성
+    server_socket = socket(PF_INET, SOCK_STREAM, 0);
+    if (INVALID_SOCKET == server_socket) {
+        perror("socket() error\n");
+        return 0;
+    }
+
+3. fetch_in_thread() 내 image 수신 부 구현
+
+
+    // server addr 초기화
+    memset(&server_addr, 0, sizeof(server_addr));
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(PORT_NUM);
+    server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+
+    // server socket 및 addr 정보를 커널에 등록
+    if (SOCKET_ERROR == bind(server_socket, (SOCKADDR*)&server_addr, sizeof(server_addr))) {
+        perror("bind() error\n");
+        return 0;
+    }
+
+    // client 의 connect 대기
+    if (SOCKET_ERROR == listen(server_socket, 5)) {
+        perror("listen() error\n");
+        return 0;
+    }
+    printf("wait for client connection...\n");
+
+    // client connect 수락
+    client_addr_size = sizeof(client_addr);
+    client_socket = accept(server_socket, (SOCKADDR*)&client_addr, &client_addr_size);
+
+    if (INVALID_SOCKET == client_socket) {
+        perror("accept() error\n");
+        return 0;
+    }
+    printf("connected!\n\n");
