@@ -30,9 +30,6 @@ unsigned char* recv_data;
         return 0;
     }
 
-3. fetch_in_thread() 내 image 수신 부 구현
-
-
     // server addr 초기화
     memset(&server_addr, 0, sizeof(server_addr));
     server_addr.sin_family = AF_INET;
@@ -61,3 +58,55 @@ unsigned char* recv_data;
         return 0;
     }
     printf("connected!\n\n");
+
+3. fetch_in_thread() 내 image 수신 부 구현
+
+    // image 정보 수신
+    ret = 0;
+    while (ret != sizeof(recv_info)) { // socket 에서 데이터 읽을 때 끊어서 읽을 수도 있으므로
+        ret += recv(client_socket, (char*)recv_info + ret, sizeof(recv_info) - ret, 0);
+            if (ret < 0) {
+                perror("[recv socket] image info receive fail\n");
+                return 0;
+            }
+        }
+    total_size = recv_info[0];
+    printf("[recv socket] image size : %d\n", total_size);
+
+    // image data 담을 buff 생성
+    recv_data = (unsigned char*)calloc(total_size, sizeof(unsigned char));
+    if (recv_data == NULL) {
+        perror("recv_data malloc() fail\n");
+        return 0;
+    }
+
+    // image 데이터 수신
+    ret = 0;
+    while (ret != total_size) {	// socket 에서 데이터 읽을 때 끊어서 읽을 수도 있으므로
+       ret += recv(client_socket, (char*)recv_data + ret, total_size - ret, 0);
+       if (ret < 0) {
+            perror("[recv socket] image data receive fail\n");
+            return 0;
+        }
+    }
+
+    // opencv 함수로 넘기기
+    in_s = get_image_from_socket(recv_data, net.w, net.h, net.c, total_size, &in_img);
+
+4. image_opencv.cpp 에 get_image_from_socket() 함수 구현
+
+image get_image_from_socket(unsigned char* img_data, int w, int h, int c, int size, mat_cv** in_img)
+{
+    std::vector<uchar> decoding(img_data, img_data + size);
+    cv::Mat *src = new cv::Mat(608, 608, CV_8UC(3));
+    *src = cv::imdecode(decoding, cv::IMREAD_COLOR);
+    
+    *(cv::Mat**)in_img = src;
+
+    cv::Mat new_img = cv::Mat(w, h, CV_8UC(c));
+    cv::resize(*src, new_img, new_img.size(), 0, 0, cv::INTER_LINEAR);
+    cv::cvtColor(new_img, new_img, cv::COLOR_RGB2BGR);
+    image im = mat_to_image(new_img);
+
+    return im;
+}

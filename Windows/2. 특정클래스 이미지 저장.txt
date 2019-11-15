@@ -1,0 +1,74 @@
+현재는 사람 class 이미지만 저장함.
+추후 화재상황 class 에 대해서도 이미지 저장할 것임.
+
+1. image_opencv.cpp 에 draw_detection_cv_v3() 함수 내에 사람 class 감지
+
+image_opencv.cpp 전역변수 선언
+    int per_chk;
+    extern double per_chk_time;
+    extern double test_chk_time;
+
+draw_detection_cv_v3() 함수 내 변수 선언
+    int class_cnt = 0;
+    int* detected_class_arr = (int*)malloc(sizeof(int) * num);
+
+class 확률 thresh이상 판별하는 부분에 클래스 저장 추가
+    detected_class_arr[class_cnt++] = j;
+
+특정(사람)class 확인
+    if (class_cnt == 0) { per_chk = 0; }
+    for (int a = 0; a < class_cnt; a++)
+    {
+        if (detected_class_arr[a] == 0) {
+            per_chk = 1;
+            break;
+        }
+        else if (a == class_cnt - 1 || test_chk_time > 5.) {
+            per_chk = 0;
+        }
+        printf("%d -> index : %d \n", a, detected_class_arr[a]);
+    }
+    printf("per_chk_time : %f / per_chk : %d\n", test_chk_time, per_chk);
+    fflush(stdout);
+
+    free(detected_class_arr);
+
+
+2. demo.c 에 webcam_capture() 함수에서 시간 측정 및 사진 캡처
+
+void webcam_capture()
+{
+
+    time_t t = time(NULL);
+    struct tm tm = *localtime(&t);
+    char from_buff[10];
+
+    if (per_chk == 1)
+    {
+        test_chk_time = get_wall_time() - per_chk_time;
+        if (get_wall_time() - per_chk_time > 1.)
+        {
+            from_buff[0] = '1';
+            fwrite(from_buff, 1, 1, from_yolo_fp);
+            fseek(from_yolo_fp, 0, SEEK_SET);
+            //printf("demo.c : %d\n", per_chk);
+        }
+        if (get_wall_time() - per_chk_time > 3.)
+        {
+            char filename[256];
+            sprintf(filename, "%d%02d%02d_%02d%02d%02d.jpg", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
+                tm.tm_hour, tm.tm_min, tm.tm_sec); //시간 동기화에 따라 tm.tm_hour 부분 수정해주기
+            save_cv_jpg(show_img, filename);
+            per_chk_time = get_wall_time();
+            from_buff[0] = '0';
+            fwrite(from_buff, 1, 1, from_yolo_fp);
+            fseek(from_yolo_fp, 0, SEEK_SET);
+        }
+    }
+    else { //per_chk==0
+        per_chk_time = get_wall_time();
+
+    }
+}
+
+위 함수를 demo() 의 while loop 끝나기 전 수행.
