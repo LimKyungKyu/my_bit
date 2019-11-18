@@ -252,7 +252,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
     SOCKADDR_IN server_addr, client_addr;
     int client_addr_size;
 
-	int ret;
+	int ret, tracking;
     char send_buff[3];
     char to_buff[3];
 
@@ -449,37 +449,32 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
             if (mode == 1)
                 draw_detections_cv_v3(show_img, local_dets, local_nboxes, demo_thresh, demo_names, demo_alphabet, demo_classes, demo_ext_output, mode, -1, NULL, NULL, NULL);
             else if (mode == 2 || mode == 3) {
-                int ret;
-                ret = draw_detections_cv_v3(show_img, local_dets, local_nboxes, demo_thresh, demo_names, demo_alphabet, demo_classes, demo_ext_output, mode, 16, &target_xval, &target_wval, &target_hval);
-                if (ret) {
+				tracking = draw_detections_cv_v3(show_img, local_dets, local_nboxes, demo_thresh, demo_names, demo_alphabet, demo_classes, demo_ext_output, mode, 16, &target_xval, &target_wval, &target_hval);
+                if (tracking) {
                     distance_val = target_wval * target_hval;
                     printf("[darknet] dog tracking");
                     printf("dist: %f\n", distance_val);
                     if (target_xval > 0.6) {
                         printf("우측으로 치우침");
                         // 좌우 제어하게 동작명령
-                        // 명령은 변수에 저장해놨다가 while문 끝날때 send 조건달아서 
+						send_buff[1] = '3';
                     }
                     else if (target_xval < 0.4) {
                         printf("좌측으로 치우침");
                         // 좌우 제어하게 동작명령
+						send_buff[1] = '2';
                     }
                     else {
                         printf("타겟 중앙!");
-                        // 정지
+                        // 직진
+						send_buff[1] = '1';
                     }
 
-                    if (distance_val < 0.3) {
-                        printf("속도 올림");
-                        // 타겟 멀어짐, 속도 업
-                    }
-                    else if (0) { // 조건 수정: 위에 좌우 제어 중일 때
-                        // 방향 제어중일 땐 정지
-                    }
-                    else {
-                        printf("속도 내림");
-                        // 타겟 가까움, 속도 다운
-                    }
+					if (distance_val > 0.6) {
+						printf("정지");
+						// 타겟 가까움
+						send_buff[1] = '5';
+					}
                 }
             }
             // end code <--
@@ -572,12 +567,17 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
         // add code -->
 #ifndef STREAM_FROM_JETBOT
 #else
-        send_buff[0] = 'o';
-        ret = send(client_socket, send_buff, sizeof(send_buff), 0);
-        if (ret < 0) {
-            perror("[send socket] message write fail\n");
-            return 0;
-        }
+		if (tracking)
+			send_buff[0] = 't';
+		else
+			send_buff[0] = 'o';
+		
+		ret = send(client_socket, send_buff, sizeof(send_buff), 0);
+		if (ret < 0) {
+			perror("[send socket] message write fail\n");
+			return 0;
+		}
+		
 #endif
         // end code <--
     }
