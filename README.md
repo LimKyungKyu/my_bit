@@ -85,3 +85,27 @@ F = G + H
 3. 길 저장하기
   - 목표 노드로부터 각 노드의 부모노드를 향해 시작 노드에 도착할 때 까지 거슬러 올라감.
 
+
+### Coverage Path Planning (IB 동작 이용)
+*참고 논문
+> <http://kiise.or.kr/e_journal/2013/10/sa/pdf/04.pdf>
+
+*IB(Intellectual Boustrophedon) 동작 알고리즘 순서  
+
+>if (남쪽 and 서쪽이 안막혀있다면)
+	서쪽 이동;
+else if (북쪽 and 서쪽이 안막혀있다면)
+	서쪽 이동;
+else if (북쪽 and 남쪽이 안막혀있다면)
+	남쪽 이동;
+else if (남쪽 방향이 S-동작 청소 영역이면)
+	남쪽 이동;
+else if (북쪽이 안막혀있으면)
+	북쪽 이동;
+else if (남쪽이 안막혀있으면)
+	남쪽 이동;
+else if (동쪽이 안막혀있으면)
+	동쪽 이동;
+else if (서쪽이 안막혀있으면)
+	서쪽 이동;
+
