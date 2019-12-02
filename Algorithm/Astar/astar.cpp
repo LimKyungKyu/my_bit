@@ -1,6 +1,7 @@
 #include <iostream>
 #include "astar.h"
 
+
 /* 
    ###################################################################################
    ################################  Node 클래스 정의  ################################
@@ -16,7 +17,7 @@ Node::Node() {
 	parent = nullptr;
 }
 
-Node::Node(unsigned int _x, unsigned int _y) {
+Node::Node(unsigned _x, unsigned _y) {
 	xPos = _x;
 	yPos = _y;
 	fScore = 0;
@@ -25,7 +26,7 @@ Node::Node(unsigned int _x, unsigned int _y) {
 	parent = nullptr;
 }
 
-Node::Node(unsigned int _x, unsigned int _y, Node* _parent) {
+Node::Node(unsigned _x, unsigned _y, Node* _parent) {
 	xPos = _x;
 	yPos = _y;
 	fScore = 0;
@@ -108,18 +109,33 @@ Map& Map::operator=(const Map& map) {
 	}
 	return *this;
 }
+
+
 // 외부 메모리 참고해서 Map 생성.
-void Map::setMapData(unsigned width, unsigned height, int** _map_data) {
+void Map::setMap(unsigned width, unsigned height, int** _map_data) {
 	xSize = width;
 	ySize = height;
 
 	data = _map_data;
 }
 
+// 맵에 해당하는 좌표 값 반환
+int Map::getMapData(unsigned _x, unsigned _y) {
+	return data[_x][_y];
+}
+
+// 맵에 해당하는 좌표 값에 val 값 설정
+void Map::setMapData(unsigned _x, unsigned _y, int val) {
+	data[_x][_y] = val;
+}
+
+
+
 // 맵에 장애물 설치
-void Map::setObject(int _x, int _y) {
+void Map::setObject(unsigned _x, unsigned _y) {
 	data[_x][_y] = OBJECT;
 }
+
 
 // 전체 맵 출력
 void Map::printMap() {
@@ -133,12 +149,13 @@ void Map::printMap() {
 }
 
 // 갈 수 있는 좌표인지 아닌지. 갈 수 있으면 1, 아니면 0
-bool Map::isWalkable(int _x, int _y) {
+bool Map::isWalkable(unsigned _x, unsigned _y) {
 	if (_x >= xSize || _y >= ySize)
 		return false;
 
 	return (data[_x][_y] != OBJECT) ? true : false;
 }
+
 
 // 인자로 받은 Node 의 parent를 추적해서 PATH 그려줌.
 void Map::setPath(Node* fin) {
@@ -301,7 +318,7 @@ void Astar::setFinish(unsigned int _x, unsigned int _y) {
 
 // 맵 설정
 void Astar::setMap(int _x, int _y, int** _map_data) {
-	map.setMapData(_x, _y, _map_data);
+	map.setMap(_x, _y, _map_data);
 }
 void Astar::setMap(const Map& _map) {
 	map = _map;
@@ -358,108 +375,6 @@ bool Astar::isInCloseList(Node* node) {
 	}
 	return false;
 }
-
-//// 현재 노드에 인접한 노드를 검사해 열린 목록에 넣음
-//bool Astar::checkAround(Node* now) {
-//	bool isThere = false;
-//
-//	//if (map.isWalkable(now->xPos, now->yPos, now->xPos, now->yPos - 1)) { // 북 체크
-//	if (map.isWalkable(now->xPos, now->yPos - 1)) { // 북 체크
-//		Node* tmp = new Node(now->xPos, now->yPos - 1, now); // 북쪽 노드 생성
-//		if (!isInCloseList(tmp)) {
-//			calcF(tmp, 0);
-//			openList.pushNode(tmp);
-//			isThere = true;
-//		}
-//		else
-//			delete tmp;
-//	}
-//
-//	//if (map.isWalkable(now->xPos, now->yPos, now->xPos + 1, now->yPos - 1)) { // 북동 체크
-//	if (map.isWalkable(now->xPos + 1, now->yPos - 1)) { // 북동 체크
-//		Node* tmp = new Node(now->xPos + 1, now->yPos - 1, now);
-//		if (!isInCloseList(tmp)) {
-//			calcF(tmp, 1);
-//			openList.pushNode(tmp);
-//			isThere = true;
-//		}
-//		else
-//			delete tmp;
-//	}
-//
-//	//if (map.isWalkable(now->xPos, now->yPos, now->xPos + 1, now->yPos)) { // 동 체크
-//	if (map.isWalkable(now->xPos + 1, now->yPos)) { // 동 체크
-//		Node* tmp = new Node(now->xPos + 1, now->yPos, now);
-//		if (!isInCloseList(tmp)) {
-//			calcF(tmp, 0);
-//			openList.pushNode(tmp);
-//			isThere = true;
-//		}
-//		else
-//			delete tmp;
-//	}
-//
-//	//if (map.isWalkable(now->xPos, now->yPos, now->xPos + 1, now->yPos + 1)) { // 남동 체크
-//	if (map.isWalkable(now->xPos + 1, now->yPos + 1)) { // 남동 체크
-//		Node* tmp = new Node(now->xPos + 1, now->yPos + 1, now);
-//		if (!isInCloseList(tmp)) {
-//			calcF(tmp, 1);
-//			openList.pushNode(tmp);
-//			isThere = true;
-//		}
-//		else
-//			delete tmp;
-//	}
-//
-//	//if (map.isWalkable(now->xPos, now->yPos, now->xPos, now->yPos + 1)) { // 남 체크
-//	if (map.isWalkable(now->xPos, now->yPos + 1)) { // 남 체크
-//		Node* tmp = new Node(now->xPos, now->yPos + 1, now);
-//		if (!isInCloseList(tmp)) {
-//			calcF(tmp, 0);
-//			openList.pushNode(tmp);
-//			isThere = true;
-//		}
-//		else
-//			delete tmp;
-//	}
-//
-//	//if (map.isWalkable(now->xPos, now->yPos, now->xPos - 1, now->yPos + 1)) { // 남서 체크
-//	if (map.isWalkable(now->xPos - 1, now->yPos + 1)) { // 남서 체크
-//		Node* tmp = new Node(now->xPos - 1, now->yPos + 1, now);
-//		if (!isInCloseList(tmp)) {
-//			calcF(tmp, 1);
-//			openList.pushNode(tmp);
-//			isThere = true;
-//		}
-//		else
-//			delete tmp;
-//	}
-//
-//	//if (map.isWalkable(now->xPos, now->yPos, now->xPos - 1, now->yPos)) { // 서 체크
-//	if (map.isWalkable(now->xPos - 1, now->yPos)) { // 서 체크
-//		Node* tmp = new Node(now->xPos - 1, now->yPos, now);
-//		if (!isInCloseList(tmp)) {
-//			calcF(tmp, 0);
-//			openList.pushNode(tmp);
-//			isThere = true;
-//		}
-//		else
-//			delete tmp;
-//	}
-//
-//	//if (map.isWalkable(now->xPos, now->yPos, now->xPos - 1, now->yPos - 1)) { // 북서 체크
-//	if (map.isWalkable(now->xPos - 1, now->yPos - 1)) { // 북서 체크
-//		Node* tmp = new Node(now->xPos - 1, now->yPos - 1, now);
-//		if (!isInCloseList(tmp)) {
-//			calcF(tmp, 1);
-//			openList.pushNode(tmp);
-//			isThere = true;
-//		}
-//		else
-//			delete tmp;
-//	}
-//	return isThere;
-//}
 
 // 현재 노드에 인접한 노드를 검사해 열린 목록에 넣음
 bool Astar::checkAround(Node* now, bool allowDiagonal, bool crossCorner) {

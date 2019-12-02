@@ -29,18 +29,10 @@ int main()
 
 	Astar as;
 	as.setMap(mapp);
-	//as.setMap(HEIGHT, WIDTH, map);
-	//as.map.setObject(4, 3);
-	//as.map.setObject(4, 4);
-	//as.map.setObject(4, 5);
-	//as.map.setObject(4, 6);
-	//as.map.setObject(4, 7);
-	//as.map.setObject(4, 1);
 
-	//as.map.printMap();
 	Node* fin;
-	fin = as.findRoute(1, 1, 8, 8);
-	as.map.setPath(fin);
-	as.map.printMap();
+	fin = as.findRoute(0, 0, 9, 9);
+	as.setPathToMap(fin);
+	as.printMapAll();
 
 }
