@@ -1,5 +1,7 @@
 #include <iostream>
+#include <algorithm>
 #include "astar.h"
+
 
 
 /* 
@@ -66,7 +68,7 @@ Map::Map(unsigned width, unsigned height) {
 	ySize = height;
 
 	data = new int* [xSize];
-	for (int i = 0; i < xSize; ++i) {
+	for (unsigned i = 0; i < xSize; ++i) {
 		data[i] = new int[ySize];
 		memset(data[i], LOAD, sizeof(int) * ySize);
 	}
@@ -78,12 +80,12 @@ Map::Map(const Map& map) {
 	ySize = map.ySize;
 	
 	data = new int* [xSize];
-	for (int i = 0; i < xSize; ++i) {
+	for (unsigned i = 0; i < xSize; ++i) {
 		data[i] = new int[ySize];
 	}
 
-	for (int i = 0; i < xSize; ++i) {
-		for (int j = 0; j < ySize; ++j) {
+	for (unsigned i = 0; i < xSize; ++i) {
+		for (unsigned j = 0; j < ySize; ++j) {
 			data[i][j] = map.data[i][j];
 		}
 	}
@@ -98,12 +100,12 @@ Map& Map::operator=(const Map& map) {
 	ySize = map.ySize;
 
 	data = new int* [xSize];
-	for (int i = 0; i < xSize; ++i) {
+	for (unsigned i = 0; i < xSize; ++i) {
 		data[i] = new int[ySize];
 	}
 
-	for (int i = 0; i < xSize; ++i) {
-		for (int j = 0; j < ySize; ++j) {
+	for (unsigned i = 0; i < xSize; ++i) {
+		for (unsigned j = 0; j < ySize; ++j) {
 			data[i][j] = map.data[i][j];
 		}
 	}
@@ -173,45 +175,38 @@ void Map::setPath(Node* fin) {
    ###############################  pqueue 클래스 정의  ###############################
    ###################################################################################
 */
-pqueue::pqueue() {
-	que.reserve(100);
-	size = 0;
-}
-pqueue::pqueue(int _reserve) {
-	que.reserve(_reserve);
-	size = 0;
-}
+
 pqueue::~pqueue() {
-	for (std::vector<Node*>::iterator iter = que.begin(); iter != que.end(); ++iter)
+	for (std::list<Node*>::iterator iter = que.begin(); iter != que.end();) {
 		delete (*iter);
+		iter = que.erase(iter);
+	}
 }
 
 // 삽입
 void pqueue::push(Node* const node) {
 	que.push_back(node);
-	size++;
+}
+
+bool comp(Node* first, Node* second) {
+	if (first->fScore > second->fScore)
+		return true;
+	else
+		return false;
 }
 
 // 정렬 (fScore 기준, 내림차순)
 void pqueue::sorting() {
-	for (unsigned i = 1; i < size; ++i) {
-		for (unsigned j = 0; j < i; ++j) {
-			if (que[j]->fScore < que[i]->fScore) {
-				Node* tmp = que[i];
-				que[i] = que[j];
-				que[j] = tmp;
-			}
-		}
-	}
+	que.sort(comp);
 }
 
 // 해당 좌표에 중복 노드 있는지 확인, 있다면 g 값 비교해서 더 작으면 g 값 및 f 값 갱신
 void pqueue::pushNode(Node* const newNode) {
-	for (int i = size - 1; i >= 0; i--) {
-		if (que[i]->compNode(newNode)) { // 중복되는 노드가 있는지, 있다면
-			if (que[i]->gScore > newNode->gScore) { // 새 노드가 g값이 더 작다면 g값 변경 및 f값 다시 계산
-				que[i]->gScore = newNode->gScore;
-				que[i]->fScore = que[i]->gScore + que[i]->fScore;
+	for (auto riter = que.rbegin(); riter != que.rend(); ++riter) {
+		if ((*riter)->compNode(newNode)) { // 중복되는 노드가 있는지, 있다면
+			if ((*riter)->gScore > newNode->gScore) { // 새 노드가 g값이 더 작다면 g값 변경 및 f값 다시 계산
+				(*riter)->gScore = newNode->gScore;
+				(*riter)->fScore = (*riter)->gScore + (*riter)->fScore;
 			}
 			else {	// 새 노드가 g값이 더 높으면 삭제
 				delete newNode;
@@ -222,20 +217,10 @@ void pqueue::pushNode(Node* const newNode) {
 	push(newNode);
 }
 
-// 큐 안에 같은게 있는지?
-bool pqueue::isInQueue(Node* node) {
-	for (std::vector<Node*>::iterator iter = que.begin(); iter != que.end(); ++iter) {
-		if ((*iter)->compNode(node))
-			return true;
-	}
-	return false;
-}
-
 // 맨 뒤에 (f값이 가장 작은 노드) 삭제
 void pqueue::pop() {
-	if (size != 0) {
+	if (!empty()) {
 		que.pop_back();
-		size--;
 	}
 	else {
 		std::cerr << "pqueue is empty\n";
@@ -244,7 +229,7 @@ void pqueue::pop() {
 
 // 맨 뒤에 (f값이 가장 작은 노드) 노드 참조
 Node* pqueue::top() {
-	if (size != 0)
+	if (!empty())
 		return que.back();
 	else
 		return nullptr;
@@ -257,7 +242,7 @@ bool pqueue::empty() {
 
 // 큐 안에 갯수.
 unsigned int pqueue::getSize() {
-	return size;
+	return que.size();
 }
 
 
@@ -363,18 +348,117 @@ void Astar::setPathToMap(Node* fin) {
 	map.setPath(fin);
 }
 
-bool Astar::isInOpenList(Node* node) {
-	return openList.isInQueue(node);
-}
 
 // 닫힌 목록에 노드가 있는지? 있으면 1, 없으면 0
 bool Astar::isInCloseList(Node* node) {
-	for (std::vector<Node*>::iterator iter = closeList.begin(); iter != closeList.end(); ++iter) {
-		if ((*iter)->compNode(node))
+	for (auto riter = closeList.rbegin(); riter != closeList.rend(); ++riter) {
+		if ((*riter)->compNode(node))
 			return true;
 	}
 	return false;
 }
+
+//// 현재 노드에 인접한 노드를 검사해 열린 목록에 넣음
+//bool Astar::checkAround(Node* now) {
+//	bool isThere = false;
+//
+//	//if (map.isWalkable(now->xPos, now->yPos, now->xPos, now->yPos - 1)) { // 북 체크
+//	if (map.isWalkable(now->xPos, now->yPos - 1)) { // 북 체크
+//		Node* tmp = new Node(now->xPos, now->yPos - 1, now); // 북쪽 노드 생성
+//		if (!isInCloseList(tmp)) {
+//			calcF(tmp, 0);
+//			openList.pushNode(tmp);
+//			isThere = true;
+//		}
+//		else
+//			delete tmp;
+//	}
+//
+//	//if (map.isWalkable(now->xPos, now->yPos, now->xPos + 1, now->yPos - 1)) { // 북동 체크
+//	if (map.isWalkable(now->xPos + 1, now->yPos - 1)) { // 북동 체크
+//		Node* tmp = new Node(now->xPos + 1, now->yPos - 1, now);
+//		if (!isInCloseList(tmp)) {
+//			calcF(tmp, 1);
+//			openList.pushNode(tmp);
+//			isThere = true;
+//		}
+//		else
+//			delete tmp;
+//	}
+//
+//	//if (map.isWalkable(now->xPos, now->yPos, now->xPos + 1, now->yPos)) { // 동 체크
+//	if (map.isWalkable(now->xPos + 1, now->yPos)) { // 동 체크
+//		Node* tmp = new Node(now->xPos + 1, now->yPos, now);
+//		if (!isInCloseList(tmp)) {
+//			calcF(tmp, 0);
+//			openList.pushNode(tmp);
+//			isThere = true;
+//		}
+//		else
+//			delete tmp;
+//	}
+//
+//	//if (map.isWalkable(now->xPos, now->yPos, now->xPos + 1, now->yPos + 1)) { // 남동 체크
+//	if (map.isWalkable(now->xPos + 1, now->yPos + 1)) { // 남동 체크
+//		Node* tmp = new Node(now->xPos + 1, now->yPos + 1, now);
+//		if (!isInCloseList(tmp)) {
+//			calcF(tmp, 1);
+//			openList.pushNode(tmp);
+//			isThere = true;
+//		}
+//		else
+//			delete tmp;
+//	}
+//
+//	//if (map.isWalkable(now->xPos, now->yPos, now->xPos, now->yPos + 1)) { // 남 체크
+//	if (map.isWalkable(now->xPos, now->yPos + 1)) { // 남 체크
+//		Node* tmp = new Node(now->xPos, now->yPos + 1, now);
+//		if (!isInCloseList(tmp)) {
+//			calcF(tmp, 0);
+//			openList.pushNode(tmp);
+//			isThere = true;
+//		}
+//		else
+//			delete tmp;
+//	}
+//
+//	//if (map.isWalkable(now->xPos, now->yPos, now->xPos - 1, now->yPos + 1)) { // 남서 체크
+//	if (map.isWalkable(now->xPos - 1, now->yPos + 1)) { // 남서 체크
+//		Node* tmp = new Node(now->xPos - 1, now->yPos + 1, now);
+//		if (!isInCloseList(tmp)) {
+//			calcF(tmp, 1);
+//			openList.pushNode(tmp);
+//			isThere = true;
+//		}
+//		else
+//			delete tmp;
+//	}
+//
+//	//if (map.isWalkable(now->xPos, now->yPos, now->xPos - 1, now->yPos)) { // 서 체크
+//	if (map.isWalkable(now->xPos - 1, now->yPos)) { // 서 체크
+//		Node* tmp = new Node(now->xPos - 1, now->yPos, now);
+//		if (!isInCloseList(tmp)) {
+//			calcF(tmp, 0);
+//			openList.pushNode(tmp);
+//			isThere = true;
+//		}
+//		else
+//			delete tmp;
+//	}
+//
+//	//if (map.isWalkable(now->xPos, now->yPos, now->xPos - 1, now->yPos - 1)) { // 북서 체크
+//	if (map.isWalkable(now->xPos - 1, now->yPos - 1)) { // 북서 체크
+//		Node* tmp = new Node(now->xPos - 1, now->yPos - 1, now);
+//		if (!isInCloseList(tmp)) {
+//			calcF(tmp, 1);
+//			openList.pushNode(tmp);
+//			isThere = true;
+//		}
+//		else
+//			delete tmp;
+//	}
+//	return isThere;
+//}
 
 // 현재 노드에 인접한 노드를 검사해 열린 목록에 넣음
 bool Astar::checkAround(Node* now, bool allowDiagonal, bool crossCorner) {

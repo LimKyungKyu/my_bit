@@ -1,5 +1,7 @@
 #pragma once
 #include <vector>
+#include <list>
+#include <set>
 
 #define LOAD	0
 #define OBJECT	1
@@ -48,18 +50,14 @@ public:
 
 
 class pqueue {
-	std::vector<Node*> que;
-	unsigned int size;
+	std::list<Node*> que;
 
 public:
-	pqueue();
-	pqueue(int _reserve);
 	~pqueue();
 
 	void push(Node* const node);
 	void sorting();
 	void pushNode(Node* const newNode);
-	bool isInQueue(Node* node); // 안쓰넹..
 	void pop();
 	Node* top();
 	bool empty();
@@ -92,7 +90,6 @@ public:
 	void setObjectToMap(unsigned int _x, unsigned int _y);
 	void printMapAll();
 	void setPathToMap(Node* fin);
-	bool isInOpenList(Node* node); // 안쓰네?
 	bool isInCloseList(Node* node);
 	bool checkAround(Node* node, bool allowDiagonal, bool crossCorner);
 	Node* findRoute(unsigned int fromX, unsigned int fromY, unsigned int toX, unsigned int toY);
