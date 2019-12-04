@@ -1,6 +1,5 @@
 #include <iostream>
 #include <list>
-//#include <Windows.h>
 #include "astar.h"
 
 #define DEBUG
@@ -27,9 +26,9 @@ Point::Point(unsigned _x, unsigned _y) {
 	y = _y;
 }
 
-void findCPP(Map& map, unsigned startX, unsigned startY);
 int doIBMotion(Map& map, std::list<Point*>& backTrackingList, unsigned* x, unsigned* y, int count);
 Point findNearestPosition(std::list<Point*> backTrackingList, const Point& now);
+void doCleanCoveragePath(Map& map, unsigned startX, unsigned startY);
 
 int main()
 {
@@ -51,9 +50,7 @@ int main()
 	}
 	testMap.printMap();
 	
-	int flag = 0, count = 0;
-	
-	findCPP(testMap, 1, 1);
+	doCleanCoveragePath(testMap, 1, 1);
 	testMap.printMap();
 }
 
@@ -68,11 +65,11 @@ IB(Intellectual Boustrophedon) 동작
 int doIBMotion(Map& map, std::list<Point*> &backTrackingList, unsigned* x, unsigned* y, int count)
 {
 	while (1) {
-		map.setMapData(*x, *y, count++);	// 지나간 경로 체크
+		map.setMapData(*x, *y, count++);	// 지나간 경로 체크, 지도에 count값 표시
 		for (auto iter = backTrackingList.begin(); iter != backTrackingList.end(); ) {	// list 반복
-			if ((*iter)->x == *x && (*iter)->y == *y) {	// position이 같은게 있으면
+			if ((*iter)->x == *x && (*iter)->y == *y) {	// Point가 같은게 있으면
 				delete (*iter);	// 메모리 해제
-				iter = backTrackingList.erase(iter);	// 
+				iter = backTrackingList.erase(iter);	// list에서 삭제
 			}
 			else
 				iter++;
@@ -140,7 +137,7 @@ Point findNearestPosition(std::list<Point*> backTrackingList, const Point& now)
 	return Nearest;
 }
 
-void findCPP(Map& map, unsigned startX, unsigned startY)
+void doCleanCoveragePath(Map& map, unsigned startX, unsigned startY)
 {
 	std::list<Point*> backTrackingList;
 	for (int j = 0; j != WIDTH; ++j) {
@@ -171,4 +168,5 @@ void findCPP(Map& map, unsigned startX, unsigned startY)
 		count = doIBMotion(map, backTrackingList, &x, &y, count);
 		printf("%d\n", backTrackingList.empty());
 	}
+
 }
