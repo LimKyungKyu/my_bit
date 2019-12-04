@@ -26,7 +26,7 @@ Point::Point(unsigned _x, unsigned _y) {
 	y = _y;
 }
 
-int doIBMotion(Map& map, std::list<Point*>& backTrackingList, unsigned* x, unsigned* y, int count);
+int doIBMotion(Map& map, unsigned* x, unsigned* y);
 Point findNearestPosition(std::list<Point*> backTrackingList, const Point& now);
 void doCleanCoveragePath(Map& map, unsigned startX, unsigned startY);
 
@@ -62,46 +62,35 @@ IB(Intellectual Boustrophedon) 동작
 	북 = y--,
 	'ㄹ' 자 형태로 남/북 동작하며 서쪽에 공간이 있으면 서쪽 우선 동작
 */
-int doIBMotion(Map& map, std::list<Point*> &backTrackingList, unsigned* x, unsigned* y, int count)
+int doIBMotion(Map& map, unsigned* x, unsigned* y)
 {
-	while (1) {
-		map.setMapData(*x, *y, count++);	// 지나간 경로 체크, 지도에 count값 표시
-		for (auto iter = backTrackingList.begin(); iter != backTrackingList.end(); ) {	// list 반복
-			if ((*iter)->x == *x && (*iter)->y == *y) {	// Point가 같은게 있으면
-				delete (*iter);	// 메모리 해제
-				iter = backTrackingList.erase(iter);	// list에서 삭제
-			}
-			else
-				iter++;
-		}
-		
-		if (map.getMapData(*x, *y + 1) == LOAD && map.getMapData(*x - 1, *y) == LOAD) { // 남 , 서
-			(*x)--;	// 서
-		}
-		else if (map.getMapData(*x, *y - 1) == LOAD && map.getMapData(*x - 1, *y) == LOAD) { // 북, 서
-			(*x)--;	// 서
-		}
-		else if (map.getMapData(*x, *y - 1) == LOAD && map.getMapData(*x, *y + 1) == LOAD) { // 북, 남
-			(*y)++;	// 남
-		}
-		else if (map.getMapData(*x, *y - 1) == LOAD) { // 북
-			(*y)--;	// 북
-		}
-		else if (map.getMapData(*x, *y + 1) == LOAD) { // 남
-			(*y)++;	// 남
-		}
-		else if (map.getMapData(*x - 1, *y) == LOAD) { // 서
-			(*x)--;	// 서
-		}
-		else if (map.getMapData(*x + 1, *y) == LOAD) { // 동
-			(*x)++;	// 동
-		}
-		else {
-			break;
-		}
+	int ret = 1;
+	if (map.getMapData(*x, *y + 1) == LOAD && map.getMapData(*x - 1, *y) == LOAD) { // 남 , 서
+		(*x)--;	// 서
 	}
-	
-	return count;
+	else if (map.getMapData(*x, *y - 1) == LOAD && map.getMapData(*x - 1, *y) == LOAD) { // 북, 서
+		(*x)--;	// 서
+	}
+	else if (map.getMapData(*x, *y - 1) == LOAD && map.getMapData(*x, *y + 1) == LOAD) { // 북, 남
+		(*y)++;	// 남
+	}
+	else if (map.getMapData(*x, *y - 1) == LOAD) { // 북
+		(*y)--;	// 북
+	}
+	else if (map.getMapData(*x, *y + 1) == LOAD) { // 남
+		(*y)++;	// 남
+	}
+	else if (map.getMapData(*x - 1, *y) == LOAD) { // 서
+		(*x)--;	// 서
+	}
+	else if (map.getMapData(*x + 1, *y) == LOAD) { // 동
+		(*x)++;	// 동
+	}
+	else {
+		ret = 0;
+	}
+
+	return ret;
 }
 Point findNearestPosition(std::list<Point*> backTrackingList, const Point& now)
 {
@@ -151,22 +140,36 @@ void doCleanCoveragePath(Map& map, unsigned startX, unsigned startY)
 
 	unsigned x = startX, y = startY;
 	bool direct = false;
-	int count = 2;
+	int ret, count = 2;
 	
 	Point tmp;
 	Point Nearest;
 
 	while (!backTrackingList.empty()) {
-		tmp.x = x;
-		tmp.y = y;
-		Nearest = findNearestPosition(backTrackingList, tmp);
-		printf("..[%d %d].. \n", Nearest.x, Nearest.y);
-		// 현재 위치로부터 찾은 Nearest 까지 최단거리 경로 계산
-		// Nearest 지점까지 이동
-		x = Nearest.x;
-		y = Nearest.y;
-		count = doIBMotion(map, backTrackingList, &x, &y, count);
-		printf("%d\n", backTrackingList.empty());
+		
+		map.setMapData(x, y, count++);	// 지나간 경로 체크, 지도에 count값 표시
+		for (auto iter = backTrackingList.begin(); iter != backTrackingList.end(); ) {	// list 반복
+			if ((*iter)->x == x && (*iter)->y == y) {	// Point가 같은게 있으면
+				delete (*iter);	// 메모리 해제
+				iter = backTrackingList.erase(iter);	// list에서 삭제
+			}
+			else
+				iter++;
+		}
+		// 갈수있는지 체크, 갈수있으면 x y 업데이트해줌
+		ret = doIBMotion(map, &x, &y);
+		// x y로 실제 이동 명령
+		if (ret == 0) {	// 갈 곳이 없으면
+			tmp.x = x;
+			tmp.y = y;
+			Nearest = findNearestPosition(backTrackingList, tmp);
+			// 가장 가까운 점 찾기
+			// A* 써서 그 지점 갈 경로 찾기
+			printf("..[%d %d].. \n", Nearest.x, Nearest.y);
+			x = Nearest.x;
+			y = Nearest.y;
+		}
+		//printf("%d\n", backTrackingList.empty());
 	}
 
 }
