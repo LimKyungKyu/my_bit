@@ -1,96 +1,99 @@
 #pragma once
 #include <vector>
 #include <list>
-#include <set>
 
 #define LOAD	0
-#define OBJECT	1
+#define OBJECT	255
 #define PATH	2
 #define DIAGONAL	true
 #define CROSSCORNER	false
 
-class Node {
+
+class myNode {
 public:
 	unsigned xPos;
 	unsigned yPos;
 	int fScore;
 	int gScore;
 	int hScore;
-	Node* parent;
+	myNode* parent;
 
-	Node();
-	Node(unsigned _x, unsigned _y);
-	Node(unsigned _x, unsigned _y, Node* _parent);
+	myNode();
+	myNode(unsigned _x, unsigned _y);
+	myNode(unsigned _x, unsigned _y, myNode* _parent);
 
-	bool compNode(Node* node);
+	bool compNode(myNode* node);
 	void initNode();
 };
 
 
-class Map {
-	unsigned xSize;
-	unsigned ySize;
-	int** data;
+class myMap {
+	int width;
+	int height;
+	unsigned char* data;
 
 public:
-	Map();
-	Map(unsigned width, unsigned height);
-	Map(const Map& map);
-	~Map();
+	myMap();
+	myMap(int _width, int _height);
+	myMap(const myMap& map);
+	myMap(int _width, int _height, unsigned char* _mapData);
+	//~myMap();
 
-	Map& operator=(const Map& map);
-	void setMap(unsigned width, unsigned height, int** _map_data);
-	int getMapData(unsigned _x, unsigned _y);
-	void setMapData(unsigned _x, unsigned _y, int val);
-	void setObject(unsigned _x, unsigned _y);
+	//myMap& operator=(const myMap& map);
+	void setMap(int _width, int _height, unsigned char* _mapData);
+	int getMapWidth();
+	int getMapHeight();
+	int getMapData(int _x, int _y);
+	void setMapData(int _x, int _y, unsigned char val);
+	void setObject(int _x, int _y);
 	void printMap();
-	bool isWalkable(unsigned _x, unsigned _y);
-	void setPath(Node* fin);
+	bool isWalkable(int _x, int _y);
+	void setPath(myNode* fin);
 };
 
 
 class pqueue {
-	std::list<Node*> que;
+	std::list<myNode*> que;
 
 public:
 	~pqueue();
 
-	void push(Node* const node);
+	void push(myNode* const node);
 	void sorting();
-	void pushNode(Node* const newNode);
+	void pushNode(myNode* const newNode);
 	void pop();
-	Node* top();
+	myNode* top();
 	bool empty();
-	unsigned int getSize();
+	size_t getSize();
 };
 
 
 class Astar {
-	Map map;
-	Node start;
-	Node finish;
+	myMap map;
+	myNode start;
+	myNode finish;
 
 	pqueue openList;
-	std::vector<Node*> closeList;
+	std::vector<myNode*> closeList;
 	bool hasRoute;
 
 public:
 	Astar();
-	Astar(const Map& _map, Node _start, Node _finish);
+	Astar(const myMap& _map, myNode _start, myNode _finish);
 	~Astar();
 
 	void init();
 	void setStart(unsigned int _x, unsigned int _y);
 	void setFinish(unsigned int _x, unsigned int _y);
-	void setMap(int _x, int _y, int** _map_data);
-	void setMap(const Map& _map);
-	int calcH(Node* const from, Node* const to);
-	int calcG(Node* const from, int diag);
-	void calcF(Node* temp, int diag);
+	void setMap(int _x, int _y, unsigned char* _map_data);
+	void setMap(const myMap& _map);
+	int calcH(myNode* const from, myNode* const to);
+	int calcG(myNode* const from, int diag);
+	void calcF(myNode* temp, int diag);
 	void setObjectToMap(unsigned int _x, unsigned int _y);
 	void printMapAll();
-	void setPathToMap(Node* fin);
-	bool isInCloseList(Node* node);
-	bool checkAround(Node* node, bool allowDiagonal, bool crossCorner);
-	Node* findRoute(unsigned int fromX, unsigned int fromY, unsigned int toX, unsigned int toY);
+	void setPathToMap(myNode* fin);
+	bool isInCloseList(myNode* node);
+	bool checkAround(myNode* node, bool allowDiagonal, bool crossCorner);
+	myNode* findRoute(unsigned int fromX, unsigned int fromY, unsigned int toX, unsigned int toY);
 };

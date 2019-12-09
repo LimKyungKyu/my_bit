@@ -1,14 +1,13 @@
 #include <iostream>
-//#include <Windows.h>
 #include "astar.h"
-
-//#define DEBUG
-#define WIDTH	10
-#define HEIGHT	10
 
 int main()
 {
-	Map mapp(10, 10); // 10x10 甘 积己
+	unsigned char* mapData = new unsigned char[100];
+	for (int i = 0; i < 100; ++i) {
+		memset(mapData, LOAD, sizeof(unsigned char) * 100);
+	}
+	myMap mapp(10, 10, mapData); // 10x10 甘 积己
 	mapp.setObject(4, 3);
 	mapp.setObject(4, 4);
 	mapp.setObject(4, 5);
@@ -20,17 +19,10 @@ int main()
 
 	mapp.printMap();
 
-	int** map;
-	map = new int* [HEIGHT];
-	for (int i = 0; i < HEIGHT; ++i) {
-		map[i] = new int[WIDTH];
-		memset(map[i], LOAD, sizeof(int) * WIDTH);
-	}
-
 	Astar as;
 	as.setMap(mapp);
 
-	Node* fin;
+	myNode* fin;
 	fin = as.findRoute(0, 0, 9, 9);
 	as.setPathToMap(fin);
 	as.printMapAll();
