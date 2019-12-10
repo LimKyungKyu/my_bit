@@ -4,7 +4,7 @@
 
 #define LOAD	0
 #define OBJECT	255
-#define PATH	2
+#define PATH	128
 #define DIAGONAL	true
 #define CROSSCORNER	false
 
@@ -37,12 +37,13 @@ public:
 	myMap(int _width, int _height);
 	myMap(const myMap& map);
 	myMap(int _width, int _height, unsigned char* _mapData);
-	//~myMap();
+	~myMap();
 
-	//myMap& operator=(const myMap& map);
+	myMap& operator=(const myMap& map);
 	void setMap(int _width, int _height, unsigned char* _mapData);
 	int getMapWidth();
 	int getMapHeight();
+	unsigned char* getMapAddr();
 	int getMapData(int _x, int _y);
 	void setMapData(int _x, int _y, unsigned char val);
 	void setObject(int _x, int _y);

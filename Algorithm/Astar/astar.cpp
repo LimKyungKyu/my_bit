@@ -71,27 +71,31 @@ myMap::myMap(const myMap& map)
 }
 
 myMap::myMap(int _width, int _height, unsigned char* _mapData)
-	: width(_width), height(_height), data(_mapData)
+	: width(_width), height(_height)//, data(_mapData)
 {
+	int size = width * height;
+	data = new unsigned char[size];
 
+	for (int i = 0; i != size; ++i)
+		data[i] = _mapData[i];
 }
 
-//myMap::~myMap() {
-//	delete data;
-//}
+myMap::~myMap() {
+	delete data;
+}
 
-// 복사 대입 연산자 재정의
-//myMap& myMap::operator=(const myMap& map) {
-//	width = map.width;
-//	height = map.height;
-//
-//	data = new uchar[width * height];
-//
-//	for (int i = 0; i != width * height; ++i)
-//		data[i] = map.data[i];
-//
-//	return *this;
-//}
+ //복사 대입 연산자 재정의
+myMap& myMap::operator=(const myMap& map) {
+	width = map.width;
+	height = map.height;
+	int size = width * height;
+	data = new unsigned char[size];
+
+	for (int i = 0; i != size; ++i)
+		data[i] = map.data[i];
+
+	return *this;
+}
 
 
 // 외부 메모리 참고해서 Map 생성.
@@ -109,6 +113,9 @@ int myMap::getMapWidth() {
 }
 int myMap::getMapHeight() {
 	return height;
+}
+unsigned char* myMap::getMapAddr() {
+	return data;
 }
 
 // 맵에 해당하는 좌표 값 반환
