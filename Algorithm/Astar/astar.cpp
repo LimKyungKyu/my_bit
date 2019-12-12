@@ -187,10 +187,7 @@ void pqueue::push(myNode* const node) {
 }
 
 bool myComp(myNode* first, myNode* second) {
-	if (first->fScore > second->fScore)
-		return true;
-	else
-		return false;
+	return (first->fScore > second->fScore);
 }
 
 // 정렬 (fScore 기준, 내림차순)

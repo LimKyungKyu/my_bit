@@ -14,6 +14,7 @@ public:
 
 	Position();
 	Position(int _x, int _y);
+	bool operator<(const Position& pos) const;
 };
 
 Position::Position()
@@ -27,11 +28,19 @@ Position::Position(int _x, int _y)
 {
 
 }
+bool Position::operator<(const Position& pos) const {
+	if (x == pos.x)
+		return (y < pos.y);
+	else
+		return (x < pos.x);
+}
+
 
 int doIBMotion(myMap& map, Position& now);
-Position findNearestPosition(std::list<Position*> backTrackingList, const Position& now);
+Position findNearestPosition(std::set<Position>& backTrackingList, const Position& now);
 Position convertToResize(Position& origin, double resizeFactor);
 Position convertToOrigin(Position& resize, double resizeFactor);
+
 
 int main()
 {
@@ -72,8 +81,6 @@ int main()
 	cv::resize(temp2, temp3, cv::Size(0, 0), RESIZEFACTOR, RESIZEFACTOR, cv::INTER_AREA);
 	std::cout << "자르고 난 후 resizeMap(testMap) 사이즈: " << temp3.cols << ", " << temp3.rows << std::endl;
 
-	cv::Mat temp4;
-
 	//myMap testMap(test.cols, test.rows, test.data);
 	myMap originMap(temp2.cols, temp2.rows, temp2.data);
 	myMap testMap(temp3.cols, temp3.rows, temp3.data);
@@ -81,6 +88,11 @@ int main()
 	cv::Mat resultOrigin(temp2.rows, temp2.cols, CV_8UC1, originMap.getMapAddr());
 	cv::Mat resultTest(temp3.rows, temp3.cols, CV_8UC1, testMap.getMapAddr());
 	
+	//cv::namedWindow("origin", cv::WINDOW_NORMAL);
+	//cv::namedWindow("test", cv::WINDOW_NORMAL);
+	//cv::namedWindow("resultOrigin", cv::WINDOW_NORMAL);
+	//cv::namedWindow("resultTest", cv::WINDOW_NORMAL);
+
 	cv::imshow("origin", temp2);
 	cv::imshow("test", temp3);
 
@@ -88,24 +100,26 @@ int main()
 	myNode* fin;
 	astar.setMap(testMap);
 
+	
+
 	std::list<Position> astarRoute;
-	std::list<Position*> backTrackingList;
+	std::set<Position> backTrackingList;
 	for (int j = 0; j != testMap.getMapWidth(); ++j) {
 		for (int i = 0; i != testMap.getMapHeight(); ++i) {
 			if (testMap.getMapData(i, j) == LOAD) {
-				Position* p1 = new Position(i, j);
-				backTrackingList.push_back(p1);
+				backTrackingList.insert(Position(i, j));
 			}
 		}
 	}
-	Position nowOrigin(80, 80);
+	Position nowOrigin(80, 80);	// 시작좌표, 원래 catographer에서 localization 통해 얻음
 	Position nowResized;
 	Position Nearest;
 
 	nowResized = convertToResize(nowOrigin, RESIZEFACTOR);
 	
-	bool direct = false;
-	int ret, count = 2;
+
+	int ret;
+	std::set<Position>::iterator findPos;
 
 	printf("\n청소 시작\n\n");
 	while (!backTrackingList.empty()) {
@@ -113,19 +127,20 @@ int main()
 		cv::imshow("resultOrigin", resultOrigin);
 		cv::imshow("resultTest", resultTest);
 		cv::waitKey(1);
-		//map.setMapData(x, y, count++);	// 지나간 경로 체크, 지도에 count값 표시
-		testMap.setMapData(nowResized.x, nowResized.y, CLEANED);	// 지나간 경로 체크, 지도에 count값 표시
-		for (auto iter = backTrackingList.begin(); iter != backTrackingList.end(); ) {	// list 반복
-			if ((*iter)->x == nowResized.x && (*iter)->y == nowResized.y) {	// Position가 같은게 있으면
-				delete (*iter);	// 메모리 해제
-				iter = backTrackingList.erase(iter);	// list에서 삭제
-			}
-			else
-				iter++;
+
+		testMap.setMapData(nowResized.x, nowResized.y, CLEANED);	// 지나간 경로 체크, 지도에 CLEANED값 표시
+		findPos = backTrackingList.find(nowResized); // 현재 좌표가 backTrackingList에 있는지 찾기
+		if (findPos != backTrackingList.end()) { // 있다면
+			backTrackingList.erase(findPos); // backTrackingList에서 삭제
 		}
-		// 갈수있는지 체크, 갈수있으면 x y 업데이트해줌
+
+		// 사방에 대해 갈수있는지 체크, 갈수있으면 x y 업데이트해줌
 		ret = doIBMotion(testMap, nowResized);
-		if (ret == 0) {	// 갈 곳이 없으면
+		if (ret != 0) {// 갈 수 있으면
+			// x y로 실제 이동 명령
+
+		}
+		else {	// 갈 곳이 없으면
 			Nearest = findNearestPosition(backTrackingList, nowResized);
 			// 가장 가까운 점 찾기
 			// A* 써서 그 지점 갈 경로 찾기
@@ -141,11 +156,10 @@ int main()
 				fin = fin->parent;
 			}
 			printf("가까운길 찾기 완료 \n\n");
-			//printf("..[%d %d].. \n", Nearest.x, Nearest.y);
+			// astarRoute에 저장된 길 따라 실제 이동하게 끔 명령
 			nowResized.x = Nearest.x;
 			nowResized.y = Nearest.y;
 		}
-		// x y로 실제 이동 명령
 		nowOrigin = convertToOrigin(nowResized, RESIZEFACTOR);
 		originMap.setMapData(nowOrigin.x, nowOrigin.y, CLEANED);
 	}
@@ -153,6 +167,8 @@ int main()
 	cv::imshow("resultOrigin", resultOrigin);
 	cv::imshow("resultTest", resultTest);
 	cv::waitKey(0);
+
+	cv::destroyAllWindows();
 }
 
 /* Origin 좌표로 부터 Resize된 좌표로 변환 */
@@ -214,38 +230,21 @@ int doIBMotion(myMap& map, Position& now)
 	return ret;
 }
 
-/* backTrackingList 에 있는 좌표들 중 now로부터 가장 가까운 점 찾기*/
-Position findNearestPosition(std::list<Position*> backTrackingList, const Position& now)
+
+/* backTrackingList 에 있는 좌표들 중 now로부터 가장 가까운 점 찾기 */
+Position findNearestPosition(std::set<Position>& backTrackingList, const Position& now)
 {
-#ifdef DEBUG
-	puts("");
-	for (auto iter = backTrackingList.begin(); iter != backTrackingList.end(); ++iter) {
-		printf("[%d, %d]\n", (*iter)->x, (*iter)->y);
-	}
-#endif
 	double minDistance = 10000;
 	Position Nearest(now.x, now.y);	// 가장 가까운점 저장할 변수
 
-#ifdef DEBUG
-	puts("현재 위치에서 backTrackingList 내 점과의 거리");
-#endif
 	for (auto iter = backTrackingList.begin(); iter != backTrackingList.end(); ++iter) {
-		//double dist = sqrt(pow(abs((double)now.x - (*iter)->x), 2) + pow(abs((double)now.y - (*iter)->y), 2)); // 점과 점 간 직선 거리 계산
-		int dist = abs((int)(now.x - (*iter)->x)) + abs((int)(now.y - (*iter)->y));
+		int dist = abs((int)(now.x - (*iter).x)) + abs((int)(now.y - (*iter).y));
 		if (dist < minDistance) { // 새로 계산한 거리가 기존꺼보다 작으면
 			minDistance = dist; // minDist 업데이트
-			Nearest.x = (*iter)->x;
-			Nearest.y = (*iter)->y;
+			Nearest.x = (*iter).x;
+			Nearest.y = (*iter).y;
 		}
-#ifdef DEBUG
-		printf("%d - %d, %d - %d\n", now.x, (*iter)->x, now.y, (*iter)->y);
-		printf("[%f]\n", dist);
-#endif
 	}
-
-#ifdef DEBUG
-	printf("제일 가까운거 좌표: [%d, %d], 거리: [%f]\n", Nearest.x, Nearest.y, minDistance);
-#endif
 
 	return Nearest;
 }
