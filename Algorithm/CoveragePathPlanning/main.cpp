@@ -88,10 +88,10 @@ int main()
 	cv::Mat resultOrigin(temp2.rows, temp2.cols, CV_8UC1, originMap.getMapAddr());
 	cv::Mat resultTest(temp3.rows, temp3.cols, CV_8UC1, testMap.getMapAddr());
 	
-	//cv::namedWindow("origin", cv::WINDOW_NORMAL);
-	//cv::namedWindow("test", cv::WINDOW_NORMAL);
-	//cv::namedWindow("resultOrigin", cv::WINDOW_NORMAL);
-	//cv::namedWindow("resultTest", cv::WINDOW_NORMAL);
+	cv::namedWindow("origin", cv::WINDOW_NORMAL);
+	cv::namedWindow("test", cv::WINDOW_NORMAL);
+	cv::namedWindow("resultOrigin", cv::WINDOW_NORMAL);
+	cv::namedWindow("resultTest", cv::WINDOW_NORMAL);
 
 	cv::imshow("origin", temp2);
 	cv::imshow("test", temp3);
@@ -100,9 +100,8 @@ int main()
 	myNode* fin;
 	astar.setMap(testMap);
 
-	
-
-	std::list<Position> astarRoute;
+	bool astarFlag = false;
+	std::vector<Position> astarRoute;
 	std::set<Position> backTrackingList;
 	for (int j = 0; j != testMap.getMapWidth(); ++j) {
 		for (int i = 0; i != testMap.getMapHeight(); ++i) {
@@ -123,45 +122,75 @@ int main()
 
 	printf("\n청소 시작\n\n");
 	while (!backTrackingList.empty()) {
+		// darknet으로 부터 쓰여진 파일 읽기
 
 		cv::imshow("resultOrigin", resultOrigin);
 		cv::imshow("resultTest", resultTest);
-		cv::waitKey(1);
-
-		testMap.setMapData(nowResized.x, nowResized.y, CLEANED);	// 지나간 경로 체크, 지도에 CLEANED값 표시
-		findPos = backTrackingList.find(nowResized); // 현재 좌표가 backTrackingList에 있는지 찾기
-		if (findPos != backTrackingList.end()) { // 있다면
-			backTrackingList.erase(findPos); // backTrackingList에서 삭제
-		}
-
-		// 사방에 대해 갈수있는지 체크, 갈수있으면 x y 업데이트해줌
-		ret = doIBMotion(testMap, nowResized);
-		if (ret != 0) {// 갈 수 있으면
-			// x y로 실제 이동 명령
-
-		}
-		else {	// 갈 곳이 없으면
-			Nearest = findNearestPosition(backTrackingList, nowResized);
-			// 가장 가까운 점 찾기
-			// A* 써서 그 지점 갈 경로 찾기
-			printf("시작 testMap 좌표: [%d, %d]\n", nowResized.x, nowResized.y); // 원래 좌표
-			fin = astar.findRoute(nowResized.x, nowResized.y, Nearest.x, Nearest.y); // 경로 찾기
-			while (fin->parent != nullptr) { // 저장된 노드로부터 경로 추출
-				Position tmp(fin->xPos, fin->yPos);
-				printf("testMap 좌표: [%d, %d]\n", fin->xPos, fin->yPos); // testMap 좌표 출력
-				tmp = convertToOrigin(tmp, RESIZEFACTOR);	// originMap 좌표로 변환
-				printf("originMap 좌표: [%d, %d]\n", tmp.x, tmp.y);
-				// 여기서 좌표값 push_front로 배열에 넣어서 주행 쪽으로 던져줘야할듯 함
-				astarRoute.push_front(tmp);
-				fin = fin->parent;
+		cv::waitKey(50);
+		if (!astarFlag) {
+			testMap.setMapData(nowResized.x, nowResized.y, CLEANED);	// 지나간 경로 체크, 지도에 CLEANED값 표시
+			findPos = backTrackingList.find(nowResized); // 현재 좌표가 backTrackingList에 있는지 찾기
+			if (findPos != backTrackingList.end()) { // 있다면
+				backTrackingList.erase(findPos); // backTrackingList에서 삭제
 			}
-			printf("가까운길 찾기 완료 \n\n");
-			// astarRoute에 저장된 길 따라 실제 이동하게 끔 명령
-			nowResized.x = Nearest.x;
-			nowResized.y = Nearest.y;
+
+			// 사방에 대해 갈수있는지 체크, 갈수있으면 x y 업데이트해줌
+			ret = doIBMotion(testMap, nowResized);
+			switch (ret) {
+			case 0:	// 갈곳 없으면
+				// 가장 가까운 점 찾기
+				Nearest = findNearestPosition(backTrackingList, nowResized);
+
+				printf("시작 testMap 좌표: [%d, %d]\n", nowResized.x, nowResized.y); // 원래 좌표
+				// A* 써서 그 지점 갈 경로 찾기
+				fin = astar.findRoute(nowResized.x, nowResized.y, Nearest.x, Nearest.y); // 경로 찾기
+				while (fin->parent != nullptr) { // 저장된 노드로부터 경로 추출
+					Position tmp(fin->xPos, fin->yPos);
+					astarRoute.push_back(tmp);	// vector에 추출된 경로들 저장.
+					fin = fin->parent;
+				}
+				
+				// astarRoute에 저장된 길 따라 실제 이동하게 끔 명령하는 곳으로 넘어가는 flag
+				astarFlag = true;
+
+				//nowResized.x = Nearest.x;
+				//nowResized.y = Nearest.y;
+				break;
+			case 1: // 동쪽
+				// (int)round(x + 1 / RESIZEFACTOR) 값 넘겨주기
+				break;
+			case 2: // 서쪽
+				// (int)round(x - 1 / RESIZEFACTOR) 값 넘겨주기
+				break;
+			case 3: // 남쪽
+				// (int)round(y - 1 / RESIZEFACTOR) 값 넘겨주기
+				break;
+			case 4: // 북쪽
+				// (int)round(y + 1 / RESIZEFACTOR) 값 넘겨주기
+				break;
+			default:
+				break;
+			}
+
+			nowOrigin = convertToOrigin(nowResized, RESIZEFACTOR);
+			originMap.setMapData(nowOrigin.x, nowOrigin.y, CLEANED);
 		}
-		nowOrigin = convertToOrigin(nowResized, RESIZEFACTOR);
-		originMap.setMapData(nowOrigin.x, nowOrigin.y, CLEANED);
+		else { // astar 길찾기 일 때
+			nowOrigin = convertToOrigin(nowResized, RESIZEFACTOR);
+			originMap.setMapData(nowOrigin.x, nowOrigin.y, 200);
+			if (!astarRoute.empty()) { // 안비었으면
+				Position tmp = astarRoute.back();
+				// (int)round((tmp.x - nowResized.x) / RESIZEFACTOR) x 값 변화량 넘겨주기
+				// (int)round((tmp.y - nowResized.y) / RESIZEFACTOR) y 값 변화량 넘겨주기
+				astarRoute.pop_back();
+				printf("testMap 좌표 : [%d, %d]\n", tmp.x, tmp.y);
+				nowResized = tmp;
+			}
+			else { // 비었으면
+				astarFlag = false;
+				printf("가까운길 찾기 완료 \n\n");
+			}
+		}
 	}
 	printf("청소 끝! \n");
 	cv::imshow("resultOrigin", resultOrigin);
@@ -193,35 +222,43 @@ Position convertToOrigin(Position& resize, double resizeFactor) {
 
 /* 
 IB(Intellectual Boustrophedon) 동작
-	동 = x++,
-	서 = x--,
-	남 = y++,
-	북 = y--,
+	동 = x++, return 1
+	서 = x--, return 2
+	남 = y++, return 3
+	북 = y--, return 4
+	이동불가 시, return 0
 	'ㄹ' 자 형태로 남/북 동작하며 서쪽에 공간이 있으면 서쪽 우선 동작
 */
 int doIBMotion(myMap& map, Position& now)
 {
-	int ret = 1;
+	int ret;
 	if (map.getMapData(now.x, now.y + 1) == LOAD && map.getMapData(now.x - 1, now.y) == LOAD) { // 남 , 서
 		now.x--;	// 서
+		ret = 2;
 	}
 	else if (map.getMapData(now.x, now.y - 1) == LOAD && map.getMapData(now.x - 1, now.y) == LOAD) { // 북, 서
 		now.x--;	// 서
+		ret = 2;
 	}
 	else if (map.getMapData(now.x, now.y - 1) == LOAD && map.getMapData(now.x, now.y + 1) == LOAD) { // 북, 남
 		now.y++;	// 남
+		ret = 3;
 	}
 	else if (map.getMapData(now.x, now.y - 1) == LOAD) { // 북
 		now.y--;	// 북
+		ret = 4;
 	}
 	else if (map.getMapData(now.x, now.y + 1) == LOAD) { // 남
 		now.y++;	// 남
+		ret = 3;
 	}
 	else if (map.getMapData(now.x - 1, now.y) == LOAD) { // 서
 		now.x--;	// 서
+		ret = 2;
 	}
 	else if (map.getMapData(now.x + 1, now.y) == LOAD) { // 동
 		now.x++;	// 동
+		ret = 1;
 	}
 	else {
 		ret = 0;
