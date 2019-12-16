@@ -90,7 +90,7 @@ unsigned char* recv_data;
         }
     }
 
-    // opencv 함수로 넘기기
+    // 내가 정의한 이미지 처리 함수로 넘기기
     in_s = get_image_from_socket(recv_data, net.w, net.h, net.c, total_size, &in_img);
 
 4. image_opencv.cpp 에 get_image_from_socket() 함수 구현
@@ -110,3 +110,7 @@ image get_image_from_socket(unsigned char* img_data, int w, int h, int c, int si
 
     return im;
 }
+
+5. image_opencv.h 에 get_image_from_socket() 함수 선언 추가
+
+image get_image_from_socket(unsigned char* img_data, int w, int h, int c, int size, mat_cv** in_img);

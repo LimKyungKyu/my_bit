@@ -39,3 +39,8 @@ nms 함수는 생략할 것이고 우리가 주목해야할 함수는 draw_detec
 4. image_opencv.cpp
 draw_detections_cv_v3() 함수가 들어있음. 그외 opencv 관련 함수는 이 파일에서 다 구현됨.
 예측된 결과의 확률이 threshold값 이상인 것에 대해 확률 값 표시 및 box 그리기 수행.
+
+
+* 우리의 목표인 특정 클래스 감지 시 캡처기능 구현, 추적 기능 구현을 위해서는
+demo.c 파일과 image_opencv.cpp 파일, image_opencv.h 파일을 수정하여야 함. 
+이 뒤의 글들은 위 파일들의 내용을 수정 할 것임.
